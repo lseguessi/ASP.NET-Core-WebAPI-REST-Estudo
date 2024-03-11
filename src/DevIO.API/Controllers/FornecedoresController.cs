@@ -13,15 +13,19 @@ namespace DevIO.API.Controllers
         private readonly IFornecedorRepository _fornecedorRepository;
         private readonly IMapper _mapper;
         private readonly IFornecedorService _fornecedorService;
+        private readonly IEnderecoRepository _enderecoRepository;
 
         public FornecedoresController(IFornecedorRepository fornecedorRepository,
                                        IMapper mapper,
                                        IFornecedorService fornecedorService,
-                                       INotificador notificador) : base(notificador)
+                                       INotificador notificador,
+                                       IEnderecoRepository enderecoRepository) : base(notificador)
         {
             _fornecedorRepository = fornecedorRepository;
             _mapper = mapper;
             _fornecedorService = fornecedorService;
+            _enderecoRepository = enderecoRepository;
+
         }
 
         [HttpGet]
@@ -80,6 +84,27 @@ namespace DevIO.API.Controllers
             await _fornecedorService.Remover(id);
 
             return CustomResponse(fornecedorViewModel);
+        }
+
+        [HttpGet("obter-endereco/{id:guid}")]
+        public async Task<EnderecoViewModel> ObterEnderecoPorId(Guid Id)
+        {
+            return _mapper.Map<EnderecoViewModel>(await _enderecoRepository.ObterPorId(Id));
+        }
+
+        [HttpPut("atualizar-endereco/{id:guid}")]
+        public async Task<IActionResult> AtualizarEndereco(Guid id, EnderecoViewModel enderecoViewModel)
+        {
+            if (id != enderecoViewModel.Id)
+            {
+                NotificarErro("O id informado não é o mesmo que foi passado na query");
+                return CustomResponse(enderecoViewModel); 
+            }
+
+            if (!ModelState.IsValid) CustomResponse(ModelState);
+
+            await _fornecedorService.AtualizarEndereco(_mapper.Map<Endereco>(enderecoViewModel));
+            return CustomResponse(enderecoViewModel);
         }
 
         public async Task<FornecedorViewModel> ObterFornecedorProdutosEndereco(Guid id)
